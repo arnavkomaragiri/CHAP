@@ -84,3 +84,22 @@ def get_conv_chunks(conn: psycopg2.extensions.connection, conv_id: str) -> List[
         return query(cur, f"SELECT * FROM PAGECHUNKS WHERE conv_id='{conv_id}'")
     except Exception as e:
         raise e
+
+def configure_vector_db(conn: psycopg2.extensions.connection, api_key: str):
+    try:
+        cur = conn.cursor()
+        # query(cur, f"ALTER SYSTEM SET vectorize.openai_key TO '{api_key}';")
+        # query(cur, "select query_pg_conf();")
+        query(cur, f"""SELECT vectorize.table(job_name => 'chunk_search', "table" => '{CHUNK_TABLE_NAME}',primary_key => 'chunk_id',columns => ARRAY['doc']);""")
+        query(cur, "SELECT vectorize.job_execute('chunk_search');")
+    except Exception as e:
+        print(e)
+    cur.close()
+
+def vector_search(conn: psycopg2.extensions.connection, conv_id: str, query: str, k: int = 3) -> List[Dict]:
+    query = query.replace("'", "\'")
+    try:
+        cur = conn.cursor()
+        return query(cur, f"""SELECT * FROM vectorize.search(job_name => 'chunk_search', query => '{query}', return_columns => ARRAY['product_id', 'product_name'], num_results => {k}) WHERE conv_id={conv_id};""")
+    except Exception as e:
+        raise e
