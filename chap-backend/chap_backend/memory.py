@@ -6,7 +6,7 @@ from typing import List, Dict, Union, Tuple
 from langchain.text_splitter import RecursiveCharacterTextSplitter, HTMLHeaderTextSplitter, Document
 
 TEXT_TYPE = Enum("TEXT_TYPE", ["PDF", "HTML"])
-CHUNK_TABLE_NAME = "PAGECHUNKS"
+CHUNK_TABLE_NAME = "PAGECHUNK"
 
 def parse_text(text: str, text_type: TEXT_TYPE, chunk_size: int = 500, chunk_overlap: int = 30) -> List[Document]:
     docs = [text]
@@ -88,18 +88,19 @@ def get_conv_chunks(conn: psycopg2.extensions.connection, conv_id: str) -> List[
 def configure_vector_db(conn: psycopg2.extensions.connection, api_key: str):
     try:
         cur = conn.cursor()
-        # query(cur, f"ALTER SYSTEM SET vectorize.openai_key TO '{api_key}';")
-        # query(cur, "select query_pg_conf();")
         query(cur, f"""SELECT vectorize.table(job_name => 'chunk_search', "table" => '{CHUNK_TABLE_NAME}',primary_key => 'chunk_id',columns => ARRAY['doc']);""")
         query(cur, "SELECT vectorize.job_execute('chunk_search');")
     except Exception as e:
         print(e)
     cur.close()
 
-def vector_search(conn: psycopg2.extensions.connection, conv_id: str, query: str, k: int = 3) -> List[Dict]:
-    query = query.replace("'", "\'")
+def vector_search(conn: psycopg2.extensions.connection, conv_id: str, query_str: str, k: int = 3) -> List[Dict]:
+    query_str = query_str.replace("'", "\'")
     try:
         cur = conn.cursor()
-        return query(cur, f"""SELECT * FROM vectorize.search(job_name => 'chunk_search', query => '{query}', return_columns => ARRAY['product_id', 'product_name'], num_results => {k}) WHERE conv_id={conv_id};""")
+        query_str = f"SELECT * FROM vectorize.search(job_name => 'chunk_search', query => '{query_str}', return_columns => ARRAY['conv_id', 'chunk_id', 'doc'], num_results => {k});"
+        results = query(cur, query_str)
+        results = [r[0] for r in results]
+        return [r for r in results if r['conv_id'] == conv_id]
     except Exception as e:
         raise e
