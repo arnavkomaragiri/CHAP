@@ -15,6 +15,7 @@ langchain = "^0.1.9"
 lxml = "^5.1.0"
 psycopg = {extras = ["binary", "pool"], version = "^3.1.18"}
 psycopg2-binary = "^2.9.9"
+presidio-analyzer = {extras = ["transformers"], version = "^2.2.353"}
 
 
 [build-system]
