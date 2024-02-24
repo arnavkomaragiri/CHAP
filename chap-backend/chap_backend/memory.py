@@ -2,7 +2,7 @@ import psycopg2
 import uuid
 
 from enum import Enum
-from typing import List, Dict
+from typing import List, Dict, Union, Tuple
 from langchain.text_splitter import RecursiveCharacterTextSplitter, HTMLHeaderTextSplitter, Document
 
 TEXT_TYPE = Enum("TEXT_TYPE", ["PDF", "HTML"])
@@ -33,7 +33,7 @@ def disconnect(connection: psycopg2.extensions.connection):
     connection.close()
 
 def create_table(connection: psycopg2.extensions.connection, cursor: psycopg2.extensions.cursor, table_name: str):
-    cursor.execute(f"CREATE TABLE {table_name} (conv_id text, chunk_id text, doc text);")
+    query(cursor, f"CREATE TABLE {table_name} (conv_id text, chunk_id text, doc text);")
     connection.commit()
 
 # this should be considered a war crime
@@ -48,21 +48,19 @@ def table_exists(connection: psycopg2.extensions.connection, cursor: psycopg2.ex
 def push_data(connection: psycopg2.extensions.connection, cursor: psycopg2.extensions.cursor, 
               table_name: str, conv_id: str, chunks: List[Document]):
     for chunk in chunks:
-        cursor.execute(f"INSERT INTO {table_name} (conv_id, chunk_id, doc) VALUES ('{conv_id}', '{chunk['uuid']}', '{chunk['doc'].page_content}');")
+        query(cursor, f"INSERT INTO {table_name} (conv_id, chunk_id, doc) VALUES ('{conv_id}', '{chunk['uuid']}', '{chunk['doc'].page_content}');")
     connection.commit()
 
-def load_page(text: str, text_type: TEXT_TYPE, connection_str: str, **kwargs) -> str:
-    conn = connect(connection_str)
+def load_page(conn: psycopg2.extensions.connection, text: str, text_type: TEXT_TYPE, **kwargs) -> str:
     conv_id = None
     try:
         cur = conn.cursor()
-        if not table_exists(conn, cur, CHUNK_TABLE_NAME):
-            # this is also garbage
-            try:
-                create_table(conn, cur, CHUNK_TABLE_NAME)
-            except Exception as e:
-                cur.execute("rollback;")
-                pass
+        # this is also garbage
+        try:
+            create_table(conn, cur, CHUNK_TABLE_NAME)
+        except Exception as e:
+            print(e)
+            pass
         chunks = parse_text(text, text_type=text_type, **kwargs)
         conv_id = uuid.uuid4()
         push_data(conn, cur, CHUNK_TABLE_NAME, conv_id, chunks)
@@ -70,5 +68,19 @@ def load_page(text: str, text_type: TEXT_TYPE, connection_str: str, **kwargs) ->
     except Exception as e:
         print(e)
         cur.execute("rollback;")
-    disconnect(conn)
     return conv_id
+
+def query(cur: psycopg2.extensions.cursor, query: str) -> List:
+    try:
+        cur.execute(query)
+        return cur.fetchall()
+    except Exception as e:
+        cur.execute("rollback;")
+        raise e
+
+def get_conv_chunks(conn: psycopg2.extensions.connection, conv_id: str) -> List[str]:
+    try:
+        cur = conn.cursor()
+        return query(cur, f"SELECT * FROM PAGECHUNKS WHERE conv_id='{conv_id}'")
+    except Exception as e:
+        raise e
