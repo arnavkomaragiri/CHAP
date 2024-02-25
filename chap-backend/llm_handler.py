@@ -18,9 +18,9 @@ class Item(BaseModel):
 
 app = FastAPI()
 
-#It's important to remove the trailing slashes from the origins for exact matching
+# It's important to remove the trailing slashes from the origins for exact matching
 origins = [
-    "http://localhost:8000/",  # Assuming this is the origin you are testing with; adjust if necessary
+    "http://localhost:8000",  # Assuming this is the origin you are testing with; adjust if necessary
     "chrome-extension://lfliigiicobkaanpblaachbkeeikbcof",  # Your Chrome extension's ID
 ]
 
@@ -32,11 +32,7 @@ app.add_middleware(
     allow_headers=["Content-Type"],  # Allow Content-Type header
 )
 
-os.environ['OPENAI_API_KEY'] = "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"  # Your OpenAI API key
-os.environ['POSTGRES_CONNECTION_STR'] = "postgresql://postgres:eqLwvup68votE4tc@org-fuse-inst-chaap-pagedata.data-1.use1.tembo.io:5432/postgres"
-
-data_set = {}
-num_retrieved = 3
+os.environ['OPENAI_API_KEY'] = ""  # Your OpenAI API key
 
 @app.post("/")
 async def api_endpoint(item: Item):
