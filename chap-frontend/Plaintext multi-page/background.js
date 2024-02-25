@@ -37,21 +37,33 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     }
 });
 
-// Function to clean up text data by removing HTML-like elements, blank lines, CSS, and arrows
 function cleanTextData(text) {
     // Remove HTML tags
     let cleanedText = text.replace(/<[^>]*>?/gm, '');
-    
-    // Remove CSS styles
+
+    // Remove CSS styl
     cleanedText = cleanedText.replace(/<style[^>]*>.*?<\/style>/gms, '');
+    cleanedText = cleanedText.replace(/style="[^"]*"/gm, '');
 
-    // Attempt to remove CSS-like patterns (may have false positives)
-    cleanedText = cleanedText.replace(/\{[^}]*\}/gm, '');
+    // Attempt to remove basic JavaScript
+    cleanedText = cleanedText.replace(/<script[^>]*>.*?<\/script>/gms, '');
 
-    // Remove blank lines (including lines with whitespace characters only)
+    // Attempt to remove JavaScript event handlers
+    cleanedText = cleanedText.replace(/\son\w+="[^"]*"/gm, '');
+
+    // Enhanced: Remove CSS syntax patterns
+    cleanedText = cleanedText.replace(/(\.|#)[\s\S]+?\{[\s\S]+?\}/gm, '');
+
+    // Remove blank lines
     cleanedText = cleanedText.replace(/^\s*[\r\n]/gm, '');
 
-    // Remove specific words/phrases
+    // JSON Objects
+    cleanedText = cleanedText.replace(/\{[^{}]*\}/gm, '');
+
+    // JSON Arrays
+    cleanedText = cleanedText.replace(/\[[^\[\]]*\]/gm, '');
+
+    // Remove specific phrases
     cleanedText = cleanedText.replace(/\b(right arrow|left arrow|up arrow|down arrow)\b/gi, '');
 
     return cleanedText;
