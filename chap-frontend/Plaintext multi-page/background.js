@@ -70,15 +70,16 @@ function cleanTextData(text) {
 }
 
 
-
 function saveData(data) {
-    const blob = new Blob([data], {type: 'text/plain'});
-    const reader = new FileReader();
-    reader.onload = function() {
-        chrome.downloads.download({
-            url: reader.result,
-            filename: 'extracted_data.txt'
-        });
-    };
-    reader.readAsDataURL(blob);
+    fetch('https://yourserver.com/api/data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            // Include authentication headers if your API requires them
+        },
+        body: JSON.stringify({ data: data })
+    })
+    .then(response => response.json())
+    .then(responseData => console.log('Data successfully sent to the server:', responseData))
+    .catch(error => console.error('Failed to send data to the server:', error));
 }
