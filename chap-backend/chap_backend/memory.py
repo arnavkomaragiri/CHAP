@@ -48,7 +48,11 @@ def table_exists(connection: psycopg2.extensions.connection, cursor: psycopg2.ex
 def push_data(connection: psycopg2.extensions.connection, cursor: psycopg2.extensions.cursor, 
               table_name: str, conv_id: str, chunks: List[Document]):
     for chunk in chunks:
-        query(cursor, f"INSERT INTO {table_name} (conv_id, chunk_id, doc) VALUES ('{conv_id}', '{chunk['uuid']}', '{chunk['doc'].page_content}');")
+        if 'page_content' in dir(chunk['doc']):
+            doc = chunk['doc'].page_content
+        else:
+            doc = chunk['doc']
+        query(cursor, f"INSERT INTO {table_name} (conv_id, chunk_id, doc) VALUES ('{conv_id}', '{chunk['uuid']}', '{doc}');")
     connection.commit()
 
 def load_page(conn: psycopg2.extensions.connection, text: str, text_type: TEXT_TYPE, **kwargs) -> str:

@@ -21,12 +21,15 @@ os.environ['OPENAI_API_KEY'] = ""  # Your OpenAI API key
 
 data_set = {}
 num_retrieved = 3
+pipe = init_mask_pipeline()
+p_mask = 0.2
 
 @app.post("/")
 async def api_endpoint(item: Item):
     conn = connect(os.getenv('POSTGRES_CONNECTION_STR'))
     if item.data not in data_set:
-        conv_id = load_page(conn, item.data, TEXT_TYPE.PDF)     
+        anon_data = anonymize(pipe, item.data, scrub_pii=True, p_mask=p_mask)
+        conv_id = load_page(conn, anon_data, TEXT_TYPE.PDF)     
         data_set[item.data] = conv_id
 
     results = vector_search(conn, data_set[item.data], item.prompt, k=num_retrieved)
