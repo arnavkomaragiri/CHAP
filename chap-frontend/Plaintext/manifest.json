@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Data Extractor",
+  "version": "1.0",
+  "icons": {
+    "16": "CHAP.png",
+    "32": "CHAP.png",
+    "48": "CHAP.png",
+    "128": "CHAP.png"
+  },
+  "description": "Extracts all website data to plaintext and saves it.",
+  "permissions": ["activeTab", "scripting", "downloads"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "CHAP.png",
+      "32": "CHAP.png",
+      "48": "CHAP.png",
+      "128": "CHAP.png"
+    }
+  }
+}
+
+  
