@@ -13,7 +13,7 @@ class Item(BaseModel):
 
 app = FastAPI()
 
-os.environ['OPENAI_API_KEY'] = ""  # Your OpenAI API key
+os.environ['OPENAI_API_KEY'] = "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"  # Your OpenAI API key
 
 @app.post("/")
 async def api_endpoint(item: Item):
