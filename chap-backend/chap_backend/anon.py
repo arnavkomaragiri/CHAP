@@ -8,7 +8,7 @@ from presidio_analyzer import AnalyzerEngine
 from presidio_analyzer.nlp_engine import TransformersNlpEngine
 
 default_device = "cuda:0" if torch.cuda.is_available() else "cpu"
-default_dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float16
+default_dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
 rng = np.random.default_rng()
 
 model_config = [{"lang_code": "en", "model_name": {

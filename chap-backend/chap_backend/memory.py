@@ -2,13 +2,17 @@ import psycopg2
 import uuid
 
 from enum import Enum
-from typing import List, Dict, Union, Tuple
+from typing import List, Dict, Union, Tuple, Optional
+from .anon import *
 from langchain.text_splitter import RecursiveCharacterTextSplitter, HTMLHeaderTextSplitter, Document
 
 TEXT_TYPE = Enum("TEXT_TYPE", ["PDF", "HTML"])
 CHUNK_TABLE_NAME = "PAGECHUNK"
 
-def parse_text(text: str, text_type: TEXT_TYPE, chunk_size: int = 500, chunk_overlap: int = 30) -> List[Document]:
+pipe = init_mask_pipeline()
+p_mask = 0.2
+
+def parse_text(text: str, text_type: TEXT_TYPE, chunk_size: int = 500, chunk_overlap: int = 30, anon_text: bool = False) -> List[Document]:
     docs = [text]
     if text_type == TEXT_TYPE.HTML:
         headers_to_split_on = [
@@ -22,7 +26,12 @@ def parse_text(text: str, text_type: TEXT_TYPE, chunk_size: int = 500, chunk_ove
         docs = html_splitter.split_text(text)
     
     char_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    docs = char_splitter.split_documents(docs)
+    if text_type == TEXT_TYPE.HTML:
+        docs = char_splitter.split_documents(docs)
+    else:
+        docs = char_splitter.split_text(docs[0])
+    if anon_text:
+        chunks = [anonymize(pipe, c, p_mask=p_mask) for c in docs]
     chunks = [{'uuid': uuid.uuid4(), 'doc': doc} for doc in docs]
     return chunks
 
@@ -46,13 +55,23 @@ def table_exists(connection: psycopg2.extensions.connection, cursor: psycopg2.ex
     return False
 
 def push_data(connection: psycopg2.extensions.connection, cursor: psycopg2.extensions.cursor, 
-              table_name: str, conv_id: str, chunks: List[Document]):
+              table_name: str, conv_id: str, chunks: List[dict]):
+    num_chunk = len(chunks)
+    print(num_chunk)
+    i = 0
     for chunk in chunks:
-        if 'page_content' in dir(chunk['doc']):
+        try:
             doc = chunk['doc'].page_content
-        else:
+        except Exception as e:
             doc = chunk['doc']
-        query(cursor, f"INSERT INTO {table_name} (conv_id, chunk_id, doc) VALUES ('{conv_id}', '{chunk['uuid']}', '{doc}');")
+        doc = doc.replace("'", "")
+        query = f"INSERT INTO {table_name} (conv_id, chunk_id, doc) VALUES (%s, %s, %s);"
+        data = (str(conv_id), str(chunk['uuid']), doc)
+        cursor.execute(query, data)
+        i += 1
+        print(f"{i} / {num_chunk}")
+    print("AAAAAAAAAAAAAAAAAAAA")
+    print(f"COUNTER: {i}")
     connection.commit()
 
 def load_page(conn: psycopg2.extensions.connection, text: str, text_type: TEXT_TYPE, **kwargs) -> str:
@@ -66,6 +85,7 @@ def load_page(conn: psycopg2.extensions.connection, text: str, text_type: TEXT_T
             print(e)
             pass
         chunks = parse_text(text, text_type=text_type, **kwargs)
+        print(f"CHUNK LEN: {len(chunks)}, {chunks[127]}")
         conv_id = uuid.uuid4()
         push_data(conn, cur, CHUNK_TABLE_NAME, conv_id, chunks)
         cur.close()
@@ -98,13 +118,21 @@ def configure_vector_db(conn: psycopg2.extensions.connection, api_key: str):
         print(e)
     cur.close()
 
-def vector_search(conn: psycopg2.extensions.connection, conv_id: str, query_str: str, k: int = 3) -> List[Dict]:
-    query_str = query_str.replace("'", "\'")
+def clear_chunks(conn: psycopg2.extensions.connection):
+    cur = conn.cursor()
+    cur.execute(f"DELETE FROM {CHUNK_TABLE_NAME};")
+    conn.commit()
+
+def vector_search(conn: psycopg2.extensions.connection, query_str: str, conv_id: Optional[str] = None, k: int = 3) -> List[Dict]:
+    # query_str = query_str.replace("'", "\'")
     try:
         cur = conn.cursor()
         query_str = f"SELECT * FROM vectorize.search(job_name => 'chunk_search', query => '{query_str}', return_columns => ARRAY['conv_id', 'chunk_id', 'doc'], num_results => {k});"
         results = query(cur, query_str)
+        print(f"LENTH OF RESULTS {len(results)}")
         results = [r[0] for r in results]
-        return [r for r in results if r['conv_id'] == conv_id]
+        if conv_id is not None:
+            return [r for r in results if r['conv_id'] == conv_id]
+        return results
     except Exception as e:
         raise e
