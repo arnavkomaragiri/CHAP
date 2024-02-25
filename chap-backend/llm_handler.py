@@ -1,5 +1,6 @@
 #python -m uvicorn llm_handler:app --reload
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
 import os
@@ -13,7 +14,21 @@ class Item(BaseModel):
 
 app = FastAPI()
 
-os.environ['OPENAI_API_KEY'] = "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"  # Your OpenAI API key
+# It's important to remove the trailing slashes from the origins for exact matching
+origins = [
+    "http://localhost:8000",  # Assuming this is the origin you are testing with; adjust if necessary
+    "chrome-extension://lfliigiicobkaanpblaachbkeeikbcof",  # Your Chrome extension's ID
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Specifies which origins are allowed
+    allow_credentials=True,
+    allow_methods=["POST"],  # Allow POST requests
+    allow_headers=["Content-Type"],  # Allow Content-Type header
+)
+
+os.environ['OPENAI_API_KEY'] = "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"  # Your OpenAI API key
 
 @app.post("/")
 async def api_endpoint(item: Item):
