@@ -1,0 +1,8 @@
+install ollama by running this in the ubuntu terminal
+curl -fsSL https://ollama.com/install.sh | sh
+
+also run ollama serve
+
+then in a new ubuntu terminal run
+
+ollama pull llama2:latest
