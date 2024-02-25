@@ -1,0 +1,41 @@
+  <html>
+  <head>
+    <style>
+      #chatbox {
+        width: 300px;
+        height: 400px;
+        overflow-y: scroll;
+        border: 5px solid black;
+        padding: 10px;
+      }
+      #user {
+        color: blue;
+        margin: 5px;
+      }
+      #bot {
+        color: green;
+        margin: 5px;
+      }
+      #input {
+        width: 280px;
+      }
+      #send {
+        width: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CHAAP Interface</h1>
+    <select id="service">
+      <option value="openai">OpenAI</option>
+      <option value="aws">AWS</option>
+      <option value="ollama">OLLAMA</option>
+    </select>
+    <div id="chatbox">
+      <div id="bot">How can I help you?</div>
+    </div>
+    <input id="input" type="text" placeholder="Type your message here">
+    <button id="send">></button>
+    <script src="popup.js"></script>
+  </body>
+  </html>

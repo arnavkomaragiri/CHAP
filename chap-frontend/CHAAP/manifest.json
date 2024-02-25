@@ -1,0 +1,33 @@
+{
+    "manifest_version": 3,
+    "name": "CHAAP",
+    "version": "2.0",
+    "icons": {
+        "16": "images/CHAP.png",
+        "32": "images/CHAP.png",
+        "48": "images/CHAP.png",
+        "128": "images/CHAP.png"
+    },
+    "description": "Extracts all website data to plaintext and goes down 1 level in links to add to data pool.",
+    "permissions": ["activeTab", "scripting", "downloads", "tabs"],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["content.js"]
+      }
+    ],
+    "action": {
+      "default_popup": "CHAAP.html",
+      "default_icon": {
+        "16": "images/CHAP.png",
+        "32": "images/CHAP.png",
+        "48": "images/CHAP.png",
+        "128": "images/CHAP.png"
+      }
+    }
+  }
+  
+    

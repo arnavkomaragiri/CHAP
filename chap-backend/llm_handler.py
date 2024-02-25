@@ -28,7 +28,7 @@ app.add_middleware(
     allow_headers=["Content-Type"],  # Allow Content-Type header
 )
 
-os.environ['OPENAI_API_KEY'] = "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"  # Your OpenAI API key
+os.environ['OPENAI_API_KEY'] = ""  # Your OpenAI API key
 
 @app.post("/")
 async def api_endpoint(item: Item):
