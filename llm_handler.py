@@ -36,7 +36,7 @@ async def api_endpoint(item: Item):
                 'content': item.message,
             },
         ])
-        print(f'response {response[0]}')
+        print(f"response {response}")
         return {'response' : response['message']['content']}
 
     elif item.service == 'aws':
